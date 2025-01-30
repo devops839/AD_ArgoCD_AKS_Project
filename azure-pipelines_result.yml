@@ -1,7 +1,7 @@
 trigger:
   paths:
     include:
-      - vote/*
+      - result/*
 
 resources:
   - repo: self
@@ -57,7 +57,7 @@ stages:
               containerRegistry: "$(dockerRegistryServiceConnection)"
               repository: "$(imageRepository)"
               command: "build"
-              Dockerfile: "vote/Dockerfile"
+              Dockerfile: "result/Dockerfile"
               tags: "$(tag)"
 
   - stage: Trivy_Image_Scan
