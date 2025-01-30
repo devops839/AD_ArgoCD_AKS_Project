@@ -1,0 +1,100 @@
+trigger:
+  paths:
+    include:
+      - redis/*
+
+resources:
+  - repo: self
+
+variables:
+  - group: "ArgoCD_AKS_VG_Redis"
+
+pool:
+  name: "myagent"
+
+stages:
+  - stage: SonarQube_Scan
+    displayName: "SonarQube Code Analysis"
+    jobs:
+      - job: SonarQube_Scan_Job
+        displayName: "Run SonarQube Scan"
+        steps:
+          - task: SonarQubePrepare@7
+            inputs:
+              SonarQube: "sonar_sc"
+              scannerMode: "cli"
+              configMode: "manual"
+              cliProjectKey: "$(sonarProjectKey)"
+              cliProjectName: "RedisApp"
+              cliSources: "."
+              extraProperties: |
+                sonar.host.url=$(sonarHostUrl)
+                sonar.token=$(sonarToken)
+          - task: SonarQubeAnalyze@7
+            inputs:
+              jdkversion: "JAVA_HOME_17_X64"
+          - task: SonarQubePublish@7
+            inputs:
+              pollingTimeoutSec: "300"
+
+  - stage: Trivy_FS_Scan
+    displayName: "Trivy File System Scan"
+    jobs:
+      - job: Trivy_FS_Scan_Job
+        displayName: "Trivy FS Scan Job"
+        steps:
+          - script: "trivy fs --format table -o trivy-report.html ."
+            displayName: "Trivy FS Scan"
+
+  - stage: Build
+    displayName: "Build the Image"
+    jobs:
+      - job: Build
+        displayName: "Build the Image Job"
+        steps:
+          - task: Docker@2
+            inputs:
+              containerRegistry: "$(dockerRegistryServiceConnection)"
+              repository: "$(imageRepository)"
+              command: "build"
+              Dockerfile: "redis/Dockerfile"
+              tags: "$(tag)"
+
+  - stage: Trivy_Image_Scan
+    displayName: "Trivy Image Scan"
+    jobs:
+      - job: Trivy_Image_Scan_Job
+        displayName: "Trivy Image Scan Job"
+        steps:
+          - script: "trivy image --severity HIGH,CRITICAL --format table -o trivy-image-report.html $(containerRegistry)/$(imageRepository):$(tag)"
+            displayName: "Trivy Image Scan"
+
+  - stage: Push
+    displayName: "Push the Image To ACR"
+    jobs:
+      - job: Push
+        displayName: "Push the Image To ACR Job"
+        steps:
+          - task: Docker@2
+            inputs:
+              containerRegistry: "$(dockerRegistryServiceConnection)"
+              repository: "$(imageRepository)"
+              command: "push"
+              tags: "$(tag)"
+
+  - stage: Update_Manifests
+    displayName: "Update Kubernetes Manifests"
+    jobs:
+      - job: Update_Manifests_Job
+        displayName: "Modify YAML files to reference new image"
+        steps:
+          - script: |
+              sed -i "s|image:.*|image: $(containerRegistry)/$(imageRepository):$(tag)|" k8s-specifications/redis-deployment.yaml
+
+              git config --global user.email "pavank839@outlook.com"
+              git config --global user.name "Pavan K"
+              git add k8s-specifications/vote-deployment.yaml
+              git commit -m "Updated vote deployment image to $(containerRegistry)/$(imageRepository):$(tag)"
+              git remote set-url origin https://$(token)@dev.azure.com/pavank839/ArgoCD_AKS_Project/_git/ArgoCD_AKS_Project
+              git push origin HEAD:$(Build.SourceBranchName)
+            displayName: "Commit and Push Changes"
