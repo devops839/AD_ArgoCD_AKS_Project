@@ -15,7 +15,7 @@ spec:
         app: redis
     spec:
       containers:
-      - image: redis:alpine
+      - image: demoargocd.azurecr.io/redis-app:885
         name: redis
         ports:
         - containerPort: 6379
