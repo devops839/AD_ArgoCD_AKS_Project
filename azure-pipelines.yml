@@ -25,7 +25,7 @@ stages:
               scannerMode: "cli"
               configMode: "manual"
               cliProjectKey: "$(sonarProjectKey)"
-              cliProjectName: "PostgresApp"
+              cliProjectName: "VoteApp"
               cliSources: "."
               extraProperties: |
                 sonar.host.url=$(sonarHostUrl)
@@ -57,7 +57,7 @@ stages:
               containerRegistry: "$(dockerRegistryServiceConnection)"
               repository: "$(imageRepository)"
               command: "build"
-              Dockerfile: "postgreSQL/Dockerfile"
+              Dockerfile: "vote/Dockerfile"
               tags: "$(tag)"
 
   - stage: Trivy_Image_Scan
@@ -89,7 +89,7 @@ stages:
         displayName: "Modify YAML files to reference new image"
         steps:
           - script: |
-              sed -i "s|image:.*|image: $(containerRegistry)/$(imageRepository):$(tag)|" k8s-specifications/db-deployment.yaml
+              sed -i "s|image:.*|image: $(containerRegistry)/$(imageRepository):$(tag)|" k8s-specifications/vote-deployment.yaml
 
               git config --global user.email "pavank839@outlook.com"
               git config --global user.name "Pavan K"
