@@ -1,8 +1,17 @@
-# Use the official Redis Alpine image as the base
-FROM redis:alpine
+# Use Alpine Linux as the base image
+FROM alpine:latest
 
-# Expose Redis default port
+# Install Redis
+RUN apk add --no-cache redis
+
+# Create the required data directory
+RUN mkdir -p /data && chown -R redis:redis /data
+
+# Set the default user to redis
+USER redis
+
+# Expose the Redis default port
 EXPOSE 6379
 
-# Set the default command to start Redis
-CMD ["redis-server"]
+# Start Redis server
+CMD ["redis-server", "--appendonly", "yes"]
