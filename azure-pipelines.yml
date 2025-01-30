@@ -1,13 +1,13 @@
 trigger:
   paths:
     include:
-      - postgreSQL/*
+      - vote/*
 
 resources:
   - repo: self
 
 variables:
-  - group: "ArgoCD_AKS_VG_Postgres"
+  - group: "ArgoCD_AKS_VG_Vote"
 
 pool:
   name: "myagent"
