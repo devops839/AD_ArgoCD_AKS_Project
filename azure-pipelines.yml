@@ -1,0 +1,92 @@
+trigger:
+  paths:
+    include:
+      - vote/*
+
+resources:
+  - repo: self
+
+variables:
+  - group: "ArgoCD_AKS_VG_Vote"
+
+pool:
+  name: "myagent"
+
+stages:
+  - stage: SonarQube_Scan
+    displayName: "SonarQube Code Analysis"
+    jobs:
+      - job: SonarQube_Scan_Job
+        displayName: "Run SonarQube Scan"
+        steps:
+          - task: SonarQubePrepare@7
+            inputs:
+              SonarQube: "sonar_sc"
+              scannerMode: "cli"
+              configMode: "manual"
+              cliProjectKey: "$(sonarProjectKey)"
+              cliProjectName: "VoteApp"
+              cliSources: "."
+              extraProperties: |
+                sonar.host.url=$(sonarHostUrl)
+                sonar.token=$(sonarToken)
+          - task: SonarQubeAnalyze@7
+            inputs:
+              jdkversion: "JAVA_HOME_17_X64"
+          - task: SonarQubePublish@7
+            inputs:
+              pollingTimeoutSec: "300"
+
+  - stage: Trivy_FS_Scan
+    displayName: "Trivy File System Scan"
+    jobs:
+      - job: Trivy_FS_Scan_Job
+        displayName: "Trivy FS Scan Job"
+        steps:
+          - script: "trivy fs --format table -o trivy-report.html ."
+            displayName: "Trivy FS Scan"
+
+  - stage: Build
+    displayName: "Build the Image"
+    jobs:
+      - job: Build
+        displayName: "Build the Image Job"
+        steps:
+          - task: Docker@2
+            inputs:
+              containerRegistry: "$(dockerRegistryServiceConnection)"
+              repository: "$(imageRepository)"
+              command: "build"
+              Dockerfile: "vote/Dockerfile"
+              tags: "$(tag)"
+
+  - stage: Trivy_Image_Scan
+    displayName: "Trivy Image Scan"
+    jobs:
+      - job: Trivy_Image_Scan_Job
+        displayName: "Trivy Image Scan Job"
+        steps:
+          - script: "trivy image --severity HIGH,CRITICAL --format table -o trivy-image-report.html $(containerRegistry)/$(imageRepository):$(tag)"
+            displayName: "Trivy Image Scan"
+
+  - stage: Push
+    displayName: "Push the Image To ACR"
+    jobs:
+      - job: Push
+        displayName: "Push the Image To ACR Job"
+        steps:
+          - task: Docker@2
+            inputs:
+              containerRegistry: "$(dockerRegistryServiceConnection)"
+              repository: "$(imageRepository)"
+              command: "push"
+              tags: "$(tag)"
+
+  - stage: Update_Manifests
+    displayName: 'Update Kubernetes Manifests'
+    jobs:
+      - job: Update_Manifests_Job
+        displayName: 'Modify YAML files to reference new image'
+        steps:
+          - script: |
+              sed -i 's|image: .*vote.*|image: $(containerRegistry)/$(imageRepository):$(tag)|g' k8s-specifications/vote-deployment.yaml
