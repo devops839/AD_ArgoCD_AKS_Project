@@ -93,7 +93,7 @@ stages:
 
               git config --global user.email "pavank839@outlook.com"
               git config --global user.name "Pavan K"
-              git add k8s-specifications/vote-deployment.yaml
+              git add k8s-specifications/redis-deployment.yaml
               git commit -m "Updated vote deployment image to $(containerRegistry)/$(imageRepository):$(tag)"
               git remote set-url origin https://$(token)@dev.azure.com/pavank839/ArgoCD_AKS_Project/_git/ArgoCD_AKS_Project
               git push origin HEAD:$(Build.SourceBranchName)
