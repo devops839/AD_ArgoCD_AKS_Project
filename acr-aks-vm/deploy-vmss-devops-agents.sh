@@ -1,5 +1,4 @@
 #!/bin/bash
-
 # Set Variables
 RESOURCE_GROUP="demorg"
 LOCATION="eastus"
@@ -13,11 +12,41 @@ MAX_INSTANCES=3
 DEVOPS_ORG="https://dev.azure.com/pavank839"
 AGENT_POOL="myagents"
 PAT_TOKEN="6hh2umc4gk9noucfHv6gX92ahh8E7sieTNxaE5Ml1MAT33hIRUxOJQQJ99BAACAAAAAAAAAAAAASAZDOeIGf"
+VNET_NAME="demo-vnet"
+SUBNET_NAME="demo-subnet"
+NSG_NAME="demo-nsg"
 
 # Create Resource Group
 az group create --name $RESOURCE_GROUP --location $LOCATION
 
-# Create VMSS for Azure DevOps agents
+# Create Virtual Network and Subnet
+az network vnet create \
+    --resource-group $RESOURCE_GROUP \
+    --name $VNET_NAME \
+    --address-prefix 10.0.0.0/16 \
+    --subnet-name $SUBNET_NAME \
+    --subnet-prefix 10.0.0.0/24
+
+# Create Network Security Group (NSG)
+az network nsg create \
+    --resource-group $RESOURCE_GROUP \
+    --name $NSG_NAME
+
+# Add NSG Rule to Allow SonarQube (Port 9000)
+az network nsg rule create \
+    --resource-group $RESOURCE_GROUP \
+    --nsg-name $NSG_NAME \
+    --name AllowSonarQube \
+    --protocol tcp \
+    --direction inbound \
+    --priority 100 \
+    --source-address-prefixes '*' \
+    --source-port-ranges '*' \
+    --destination-address-prefixes '*' \
+    --destination-port-ranges 9000 \
+    --access allow
+
+# Create VMSS for Azure DevOps agents with the NSG
 az vmss create \
     --resource-group $RESOURCE_GROUP \
     --name $VMSS_NAME \
@@ -27,6 +56,9 @@ az vmss create \
     --instance-count $INSTANCE_COUNT \
     --vm-sku $VM_SIZE \
     --upgrade-policy-mode automatic \
+    --vnet-name $VNET_NAME \
+    --subnet $SUBNET_NAME \
+    --nsg $NSG_NAME \
     --custom-data cloud-init.yaml  # Reference to cloud-init script
 
 # Enable auto-scaling for VMSS
@@ -51,4 +83,4 @@ az monitor autoscale rule create \
     --condition "Percentage CPU < 30 avg 5m" \
     --scale in 1
 
-echo "VMSS for Azure DevOps agents created with auto-scaling enabled."
+echo "VMSS for Azure DevOps agents created with auto-scaling enabled and NSG rule to open port 9000 for SonarQube."
