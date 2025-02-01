@@ -1,11 +1,11 @@
 #!/bin/bash
 
 # Set variables
-RESOURCE_GROUP="myResourceGroup"
+RESOURCE_GROUP="demorg"
 LOCATION="eastus"
-ACR_NAME="myContainerRegistry"
-AKS_NAME="myAKSCluster"
-NODE_POOL_NAME="nodepool1"
+ACR_NAME="demoacr839"
+AKS_NAME="demoaks839"
+NODE_POOL_NAME="demonp839"
 NODE_VM_SIZE="Standard_DS2_v2"
 MIN_NODES=1
 MAX_NODES=2
