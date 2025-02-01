@@ -13,9 +13,9 @@ MAX_INSTANCES=3
 DEVOPS_ORG="https://dev.azure.com/pavank839"
 AGENT_POOL="myagents"
 PAT_TOKEN="6hh2umc4gk9noucfHv6gX92ahh8E7sieTNxaE5Ml1MAT33hIRUxOJQQJ99BAACAAAAAAAAAAAAASAZDOeIGf"
-VNET_NAME="devops-vnet"
-SUBNET_NAME="devops-subnet"
-NSG_NAME="devops-nsg"
+VNET_NAME="demo-vnet"
+SUBNET_NAME="demo-subnet"
+NSG_NAME="demo-nsg"
 
 # Create Resource Group
 az group create --name $RESOURCE_GROUP --location $LOCATION
