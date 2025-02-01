@@ -1,0 +1,31 @@
+#cloud-config
+package_update: true
+packages:
+  - openjdk-17-jdk
+  - wget
+  - apt-transport-https
+  - gnupg
+  - lsb-release
+  - docker.io
+
+runcmd:
+  - export JAVA_HOME=/usr/lib/jvm/java-17-openjdk-amd64
+  - export PATH=$JAVA_HOME/bin:$PATH
+  - echo 'export JAVA_HOME=/usr/lib/jvm/java-17-openjdk-amd64' >> /etc/environment
+  - echo 'export PATH=$JAVA_HOME/bin:$PATH' >> /etc/environment
+  - source /etc/environment
+  - java -version
+
+  # Install Trivy
+  - wget -qO - https://aquasecurity.github.io/trivy-repo/deb/public.key | tee /etc/apt/trusted.gpg.d/trivy.asc
+  - echo "deb https://aquasecurity.github.io/trivy-repo/deb $(lsb_release -cs) main" | tee /etc/apt/sources.list.d/trivy.list
+  - apt update
+  - apt install -y trivy
+  - trivy --version
+
+  # Configure Docker
+  - chmod 666 /var/run/docker.sock
+  - systemctl restart docker
+
+  # Run SonarQube in Docker
+  - docker run -d --name sonar -p 9000:9000 sonarqube:lts-community
