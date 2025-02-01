@@ -1,4 +1,5 @@
 #!/bin/bash
+
 # Set Variables
 RESOURCE_GROUP="demorg"
 LOCATION="eastus"
@@ -12,9 +13,9 @@ MAX_INSTANCES=3
 DEVOPS_ORG="https://dev.azure.com/pavank839"
 AGENT_POOL="myagents"
 PAT_TOKEN="6hh2umc4gk9noucfHv6gX92ahh8E7sieTNxaE5Ml1MAT33hIRUxOJQQJ99BAACAAAAAAAAAAAAASAZDOeIGf"
-VNET_NAME="demo-vnet"
-SUBNET_NAME="demo-subnet"
-NSG_NAME="demo-nsg"
+VNET_NAME="devops-vnet"
+SUBNET_NAME="devops-subnet"
+NSG_NAME="devops-nsg"
 
 # Create Resource Group
 az group create --name $RESOURCE_GROUP --location $LOCATION
@@ -39,7 +40,7 @@ az network nsg rule create \
     --name AllowSonarQube \
     --protocol tcp \
     --direction inbound \
-    --priority 100 \
+    --priority 1000 \
     --source-address-prefixes '*' \
     --source-port-ranges '*' \
     --destination-address-prefixes '*' \
@@ -50,7 +51,7 @@ az network nsg rule create \
 az vmss create \
     --resource-group $RESOURCE_GROUP \
     --name $VMSS_NAME \
-    --image UbuntuLTS \
+    --image Ubuntu2204 \
     --admin-username $ADMIN_USER \
     --admin-password $ADMIN_PASSWORD \
     --instance-count $INSTANCE_COUNT \
@@ -61,11 +62,18 @@ az vmss create \
     --nsg $NSG_NAME \
     --custom-data cloud-init.yaml  # Reference to cloud-init script
 
+# Get the VMSS Resource ID for autoscaling
+VMSS_RESOURCE_ID=$(az vmss show \
+    --resource-group $RESOURCE_GROUP \
+    --name $VMSS_NAME \
+    --query "id" \
+    --output tsv)
+
 # Enable auto-scaling for VMSS
 az monitor autoscale create \
     --resource-group $RESOURCE_GROUP \
     --name "devops-agent-autoscale" \
-    --target-resource $VMSS_NAME \
+    --target-resource $VMSS_RESOURCE_ID \
     --min-count $MIN_INSTANCES \
     --max-count $MAX_INSTANCES \
     --count $INSTANCE_COUNT
