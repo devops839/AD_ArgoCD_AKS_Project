@@ -69,11 +69,11 @@ VMSS_RESOURCE_ID=$(az vmss show \
     --query "id" \
     --output tsv)
 
-# Enable auto-scaling for VMSS
+# Enable auto-scaling for VMSS (Fixed --resource instead of --target-resource)
 az monitor autoscale create \
     --resource-group $RESOURCE_GROUP \
     --name "devops-agent-autoscale" \
-    --target-resource $VMSS_RESOURCE_ID \
+    --resource $VMSS_RESOURCE_ID \
     --min-count $MIN_INSTANCES \
     --max-count $MAX_INSTANCES \
     --count $INSTANCE_COUNT
