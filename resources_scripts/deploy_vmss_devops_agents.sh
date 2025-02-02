@@ -29,9 +29,7 @@ az network vnet create \
     --subnet-prefix 10.0.0.0/24
 
 # Create Network Security Group (NSG)
-az network nsg create \
-    --resource-group $RESOURCE_GROUP \
-    --name $NSG_NAME
+az network nsg create --resource-group $RESOURCE_GROUP --name $NSG_NAME
 
 # Add NSG Rule to Allow SonarQube (Port 9000)
 az network nsg rule create \
@@ -47,7 +45,7 @@ az network nsg rule create \
     --destination-port-ranges 9000 \
     --access allow
 
-# Create VMSS for Azure DevOps agents with the NSG
+# Create VMSS for Azure DevOps agents with NSG and custom cloud-init script
 az vmss create \
     --resource-group $RESOURCE_GROUP \
     --name $VMSS_NAME \
@@ -60,16 +58,12 @@ az vmss create \
     --vnet-name $VNET_NAME \
     --subnet $SUBNET_NAME \
     --nsg $NSG_NAME \
-    --custom-data cloud-init.yaml  # Reference to cloud-init script
+    --custom-data cloud_init.yaml
 
-# Get the VMSS Resource ID for autoscaling
-VMSS_RESOURCE_ID=$(az vmss show \
-    --resource-group $RESOURCE_GROUP \
-    --name $VMSS_NAME \
-    --query "id" \
-    --output tsv)
+# Get VMSS Resource ID for autoscaling
+VMSS_RESOURCE_ID=$(az vmss show --resource-group $RESOURCE_GROUP --name $VMSS_NAME --query "id" --output tsv)
 
-# Enable auto-scaling for VMSS (Fixed --resource instead of --target-resource)
+# Enable Auto-scaling for VMSS
 az monitor autoscale create \
     --resource-group $RESOURCE_GROUP \
     --name "devops-agent-autoscale" \
