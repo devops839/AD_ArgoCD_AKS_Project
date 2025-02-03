@@ -1,9 +1,11 @@
 trigger:
-  branches:
+  paths:
     include:
-      - main
-    exclude:
-      - 'k8s-specifications/*' 
+      - worker/*
+      - vote/*
+      - result/*
+      - redis
+      - postgreSQL
 
 resources:
   - repo: self
