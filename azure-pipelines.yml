@@ -85,7 +85,7 @@ stages:
           - task: Docker@2
             inputs:
               containerRegistry: '$(dockerRegistryServiceConnection)'
-              repository: '$(imageRepository)-postgreSQL'
+              repository: '$(imageRepository)-postgresql'
               command: 'build'
               Dockerfile: 'postgreSQL/Dockerfile'
               tags: '$(tag)'
@@ -99,14 +99,14 @@ stages:
           - script: |
               images=(
                   "vote"
-                  "postgreSQL"
+                  "postgresql"
                   "redis"
                   "worker"
                   "result"
               )
 
               for service in "${images[@]}"; do
-                  echo "Pushing $(imageRepository)-$service:$(tag)"
+                  echo "Pushing $(containerRegistry)/$(imageRepository)-$service:$(tag)"
                   docker push "$(containerRegistry)/$(imageRepository)-$service:$(tag)"
               done
             displayName: "Push Images to ACR"
