@@ -31,3 +31,5 @@ spec:
       volumes:
       - name: db-data
         emptyDir: {} 
+      imagePullSecrets:
+        - name: acr-secret
