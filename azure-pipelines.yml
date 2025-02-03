@@ -1,7 +1,5 @@
 trigger:
-  paths:
-    include:
-      - vote/*
+  - main
 
 resources:
   - repo: self
