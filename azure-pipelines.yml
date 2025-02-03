@@ -56,7 +56,6 @@ stages:
               repository: "$(imageRepository)-vote"
               command: "build"
               Dockerfile: "vote/Dockerfile"
-              buildContext: "$(Build.SourcesDirectory)/vote"
               tags: "$(tag)"
 
           - task: Docker@2
@@ -65,7 +64,6 @@ stages:
               repository: "$(imageRepository)-redis"
               command: "build"
               Dockerfile: "redis/Dockerfile"
-              buildContext: "$(Build.SourcesDirectory)/redis"
               tags: "$(tag)"
 
           - task: Docker@2
@@ -74,7 +72,6 @@ stages:
               repository: "$(imageRepository)-worker"
               command: "build"
               Dockerfile: "worker/Dockerfile"
-              buildContext: "$(Build.SourcesDirectory)/worker"
               tags: "$(tag)"
 
           - task: Docker@2
@@ -83,7 +80,6 @@ stages:
               repository: "$(imageRepository)-result"
               command: "build"
               Dockerfile: "result/Dockerfile"
-              buildContext: "$(Build.SourcesDirectory)/result"
               tags: "$(tag)"
 
           - task: Docker@2
@@ -92,7 +88,6 @@ stages:
               repository: '$(imageRepository)-postgreSQL'
               command: 'build'
               Dockerfile: 'postgreSQL/Dockerfile'
-              buildContext: '$(Build.SourcesDirectory)/postgreSQL/'
               tags: '$(tag)'
 
   - stage: Push
@@ -104,7 +99,7 @@ stages:
           - script: |
               images=(
                   "vote"
-                  "db"
+                  "postgreSQL"
                   "redis"
                   "worker"
                   "result"
