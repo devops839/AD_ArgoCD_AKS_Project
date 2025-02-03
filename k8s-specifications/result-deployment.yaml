@@ -15,7 +15,7 @@ spec:
         app: result
     spec:
       containers:
-      - image: demoargocd.azurecr.io/result-app:869
+      - image: demoacr839.azurecr.io/demorepo:926
         name: result
         ports:
         - containerPort: 80

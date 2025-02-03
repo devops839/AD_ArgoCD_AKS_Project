@@ -15,7 +15,7 @@ spec:
         app: db
     spec:
       containers:
-      - image: demoargocd.azurecr.io/postgres-app:884
+      - image: demoacr839.azurecr.io/demorepo:926
         name: postgres
         env:
         - name: POSTGRES_USER
