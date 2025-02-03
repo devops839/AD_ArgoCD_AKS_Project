@@ -1,7 +1,7 @@
 trigger:
   paths:
     include:
-      - postgreSQL/*
+      - vote/*
 
 resources:
   - repo: self
@@ -89,12 +89,22 @@ stages:
         displayName: "Modify YAML files to reference new image"
         steps:
           - script: |
-              sed -i "s|image:.*|image: $(containerRegistry)/$(imageRepository):$(tag)|" k8s-specifications/db-deployment.yaml
+              deployment_files=(
+                  "k8s-specifications/vote-deployment.yaml"
+                  "k8s-specifications/db-deployment.yaml"
+                  "k8s-specifications/redis-deployment.yaml"
+                  "k8s-specifications/worker-deployment.yaml"
+                  "k8s-specifications/result-deployment.yaml"
+              )
+
+              for file in "${deployment_files[@]}"; do
+                  sed -i "s|image:.*|image: $(containerRegistry)/$(imageRepository):$(tag)|" "$file"
+              done
 
               git config --global user.email "pavank839@outlook.com"
               git config --global user.name "Pavan K"
-              git add k8s-specifications/db-deployment.yaml
-              git commit -m "Updated db deployment image to $(containerRegistry)/$(imageRepository):$(tag)"
+              git add "${deployment_files[@]}"
+              git commit -m "Updated deployment images to $(containerRegistry)/$(imageRepository):$(tag)"
               git remote set-url origin https://$(token)@dev.azure.com/pavank839/ArgoCD_AKS_Project/_git/ArgoCD_AKS_Project
               git push origin HEAD:$(Build.SourceBranchName)
-            displayName: "Commit and Push Changes"
+            displayName: "Update Kubernetes Deployment Images"
