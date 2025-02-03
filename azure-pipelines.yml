@@ -97,6 +97,7 @@ stages:
         displayName: "Push All Microservice Images"
         steps:
           - script: |
+              docker login demoacr839.azurecr.io -u $(dockerUsername) -p $(dockerPassword)
               images=(
                   "vote"
                   "postgresql"
@@ -106,10 +107,12 @@ stages:
               )
 
               for service in "${images[@]}"; do
-                  echo "Pushing $(containerRegistry)/$(imageRepository)-$service:$(tag)"
-                  docker push "$(containerRegistry)/$(imageRepository)-$service:$(tag)"
+                  docker tag demoacr839.azurecr.io/demorepo-$service:$(tag) demoacr839.azurecr.io/demorepo-$service:$(tag)
+                  echo "Pushing demoacr839.azurecr.io/demorepo-$service:$(tag)"
+                  docker push demoacr839.azurecr.io/demorepo-$service:$(tag)
               done
             displayName: "Push Images to ACR"
+
 
   - stage: Update_Manifests
     displayName: "Update Kubernetes Manifests"
