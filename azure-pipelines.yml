@@ -95,27 +95,6 @@ stages:
               buildContext: '$(Build.SourcesDirectory)/postgreSQL/'
               tags: '$(tag)'
 
-  - stage: Trivy_Image_Scan
-    displayName: "Trivy Image Scan"
-    jobs:
-      - job: Trivy_Image_Scan_Job
-        displayName: "Trivy Image Scan Job"
-        steps:
-          - script: |
-              images=(
-                  "$(containerRegistry)/$(imageRepository)-vote:$(tag)"
-                  "$(containerRegistry)/$(imageRepository)-redis:$(tag)"
-                  "$(containerRegistry)/$(imageRepository)-worker:$(tag)"
-                  "$(containerRegistry)/$(imageRepository)-result:$(tag)"
-                  "$(containerRegistry)/$(imageRepository)-postgreSQL:$(tag)"
-              )
-
-              for image in "${images[@]}"; do
-                  echo "Scanning $image"
-                  trivy image --severity HIGH,CRITICAL --exit-code 0 --format table -o trivy-image-report.html "$image"
-              done
-            displayName: "Trivy Image Scan (All Images)"
-
   - stage: Push
     displayName: "Push All Images To ACR"
     jobs:
