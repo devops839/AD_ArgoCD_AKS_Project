@@ -64,7 +64,7 @@ stages:
       - job: Trivy_Image_Scan_Job
         displayName: "Trivy Image Scan Job"
         steps:
-          - script: "trivy image --format table -o trivy-image-.html"
+          - script: "trivy image --severity HIGH,CRITICAL --format table -o trivy-image-report.html $(containerRegistry)/$(imageRepository):$(tag)"
             displayName: "Trivy Image Scan"
 
   - stage: Push
