@@ -125,22 +125,18 @@ stages:
         displayName: "Modify YAML files to reference new image"
         steps:
           - script: |
-              deployment_files=(
-                  "k8s-specifications/vote-deployment.yaml"
-                  "k8s-specifications/db-deployment.yaml"
-                  "k8s-specifications/redis-deployment.yaml"
-                  "k8s-specifications/worker-deployment.yaml"
-                  "k8s-specifications/result-deployment.yaml"
-              )
-
-              for file in "${deployment_files[@]}"; do
-                  sed -i "s|image:.*|image: $(containerRegistry)/$(imageRepository)-$service:$(tag)|" "$file"
+              services=("vote" "postgresql" "redis" "worker" "result")
+              
+              for service in "${services[@]}"; do
+                  echo "Updating image for $service"
+                  sed -i "s|image:.*|image: demoacr839.azurecr.io/$(imageRepository)-$service:$(tag)|" "k8s-specifications/${service}-deployment.yaml"
               done
 
               git config --global user.email "pavank839@outlook.com"
               git config --global user.name "Pavan K"
-              git add "${deployment_files[@]}"
-              git commit -m "Updated deployment images to $(containerRegistry)/$(imageRepository)-$service:$(tag)"
+              git add "k8s-specifications/*-deployment.yaml"
+              git commit -m "Updated image tags for services to $(tag)"
               git remote set-url origin https://$(token)@dev.azure.com/pavank839/ArgoCD_AKS_Project/_git/ArgoCD_AKS_Project
               git push origin HEAD:$(Build.SourceBranchName)
             displayName: "Update Kubernetes Deployment Images"
+
