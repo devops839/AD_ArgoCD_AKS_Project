@@ -17,3 +17,6 @@ spec:
       containers:
       - image: demoargocd.azurecr.io/worker-app:872
         name: worker
+      imagePullSecrets:
+        - name: acr-secret
+
