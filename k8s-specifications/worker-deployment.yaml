@@ -15,7 +15,7 @@ spec:
         app: worker
     spec:
       containers:
-      - image: demoacr839.azurecr.io/demorepo-:928
+      - image: demoacr839.azurecr.io/demorepo-:929
         name: worker
       imagePullSecrets:
         - name: acr-secret
