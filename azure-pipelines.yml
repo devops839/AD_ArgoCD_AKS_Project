@@ -45,17 +45,55 @@ stages:
             displayName: "Trivy FS Scan"
 
   - stage: Build
-    displayName: "Build Images"
+    displayName: "Build All Images"
     jobs:
-      - job: Build
-        displayName: "Build Images Job"
+      - job: Build_Images
+        displayName: "Build All Microservice Images"
         steps:
-          - script: |
-              services=("vote" "db" "redis" "worker" "result")
-              for service in "${services[@]}"; do
-                docker build -t $(containerRegistry)/$(imageRepository)-$service:$(tag) -f $service/Dockerfile .
-              done
-            displayName: "Build All Images"
+          - task: Docker@2
+            inputs:
+              containerRegistry: "$(dockerRegistryServiceConnection)"
+              repository: "$(imageRepository)-vote"
+              command: "build"
+              Dockerfile: "vote/Dockerfile"
+              buildContext: "$(Build.SourcesDirectory)/vote"
+              tags: "$(tag)"
+
+          - task: Docker@2
+            inputs:
+              containerRegistry: "$(dockerRegistryServiceConnection)"
+              repository: "$(imageRepository)-db"
+              command: "build"
+              Dockerfile: "postgreSQL/Dockerfile"
+              buildContext: "$(Build.SourcesDirectory)/db"
+              tags: "$(tag)"
+
+          - task: Docker@2
+            inputs:
+              containerRegistry: "$(dockerRegistryServiceConnection)"
+              repository: "$(imageRepository)-redis"
+              command: "build"
+              Dockerfile: "redis/Dockerfile"
+              buildContext: "$(Build.SourcesDirectory)/redis"
+              tags: "$(tag)"
+
+          - task: Docker@2
+            inputs:
+              containerRegistry: "$(dockerRegistryServiceConnection)"
+              repository: "$(imageRepository)-worker"
+              command: "build"
+              Dockerfile: "worker/Dockerfile"
+              buildContext: "$(Build.SourcesDirectory)/worker"
+              tags: "$(tag)"
+
+          - task: Docker@2
+            inputs:
+              containerRegistry: "$(dockerRegistryServiceConnection)"
+              repository: "$(imageRepository)-result"
+              command: "build"
+              Dockerfile: "result/Dockerfile"
+              buildContext: "$(Build.SourcesDirectory)/result"
+              tags: "$(tag)"
 
   - stage: Trivy_Image_Scan
     displayName: "Trivy Image Scan"
@@ -64,41 +102,64 @@ stages:
         displayName: "Trivy Image Scan Job"
         steps:
           - script: |
-              services=("vote" "db" "redis" "worker" "result")
-              for service in "${services[@]}"; do
-                trivy image --severity HIGH,CRITICAL --ignore-unfixed --format table $(containerRegistry)/$(imageRepository)-$service:$(tag)
+              images=(
+                  "$(containerRegistry)/$(imageRepository)-vote:$(tag)"
+                  "$(containerRegistry)/$(imageRepository)-db:$(tag)"
+                  "$(containerRegistry)/$(imageRepository)-redis:$(tag)"
+                  "$(containerRegistry)/$(imageRepository)-worker:$(tag)"
+                  "$(containerRegistry)/$(imageRepository)-result:$(tag)"
+              )
+
+              for image in "${images[@]}"; do
+                  echo "Scanning $image"
+                  trivy image --severity HIGH,CRITICAL --exit-code 0 --format table -o trivy-image-report.html "$image"
               done
-            displayName: "Scan All Images (Allow HIGH/CRITICAL)"
+            displayName: "Trivy Image Scan (All Images)"
 
   - stage: Push
-    displayName: "Push Images to ACR"
+    displayName: "Push All Images To ACR"
     jobs:
-      - job: Push
-        displayName: "Push Images Job"
+      - job: Push_Images
+        displayName: "Push All Microservice Images"
         steps:
           - script: |
-              services=("vote" "db" "redis" "worker" "result")
-              for service in "${services[@]}"; do
-                docker push $(containerRegistry)/$(imageRepository)-$service:$(tag)
+              images=(
+                  "vote"
+                  "db"
+                  "redis"
+                  "worker"
+                  "result"
+              )
+
+              for service in "${images[@]}"; do
+                  echo "Pushing $(imageRepository)-$service:$(tag)"
+                  docker push "$(containerRegistry)/$(imageRepository)-$service:$(tag)"
               done
-            displayName: "Push All Images"
+            displayName: "Push Images to ACR"
 
   - stage: Update_Manifests
     displayName: "Update Kubernetes Manifests"
     jobs:
       - job: Update_Manifests_Job
-        displayName: "Modify YAML files to reference new images"
+        displayName: "Modify YAML files to reference new image"
         steps:
           - script: |
-              files=("vote-deployment.yaml" "db-deployment.yaml" "redis-deployment.yaml" "worker-deployment.yaml" "result-deployment.yaml")
-              for file in "${files[@]}"; do
-                sed -i "s|image:.*|image: $(containerRegistry)/$(imageRepository):$(tag)|" k8s-specifications/$file
+              deployment_files=(
+                  "k8s-specifications/vote-deployment.yaml"
+                  "k8s-specifications/db-deployment.yaml"
+                  "k8s-specifications/redis-deployment.yaml"
+                  "k8s-specifications/worker-deployment.yaml"
+                  "k8s-specifications/result-deployment.yaml"
+              )
+
+              for file in "${deployment_files[@]}"; do
+                  sed -i "s|image:.*|image: $(containerRegistry)/$(imageRepository):$(tag)|" "$file"
               done
 
               git config --global user.email "pavank839@outlook.com"
               git config --global user.name "Pavan K"
-              git add k8s-specifications/*.yaml
-              git commit -m "Updated db deployment image to $(containerRegistry)/$(imageRepository):$(tag)"
+              git add "${deployment_files[@]}"
+              git commit -m "Updated deployment images to $(containerRegistry)/$(imageRepository):$(tag)"
               git remote set-url origin https://$(token)@dev.azure.com/pavank839/ArgoCD_AKS_Project/_git/ArgoCD_AKS_Project
               git push origin HEAD:$(Build.SourceBranchName)
             displayName: "Update Kubernetes Deployment Images"
