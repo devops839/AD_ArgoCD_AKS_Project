@@ -104,10 +104,10 @@ stages:
           - script: |
               images=(
                   "$(containerRegistry)/$(imageRepository)-vote:$(tag)"
-                  "$(containerRegistry)/$(imageRepository)-db:$(tag)"
                   "$(containerRegistry)/$(imageRepository)-redis:$(tag)"
                   "$(containerRegistry)/$(imageRepository)-worker:$(tag)"
                   "$(containerRegistry)/$(imageRepository)-result:$(tag)"
+                  "$(containerRegistry)/$(imageRepository)-postgreSQL:$(tag)"
               )
 
               for image in "${images[@]}"; do
