@@ -62,15 +62,6 @@ stages:
           - task: Docker@2
             inputs:
               containerRegistry: "$(dockerRegistryServiceConnection)"
-              repository: "$(imageRepository)-db"
-              command: "build"
-              Dockerfile: "postgreSQL/Dockerfile"
-              buildContext: "$(Build.SourcesDirectory)/db"
-              tags: "$(tag)"
-
-          - task: Docker@2
-            inputs:
-              containerRegistry: "$(dockerRegistryServiceConnection)"
               repository: "$(imageRepository)-redis"
               command: "build"
               Dockerfile: "redis/Dockerfile"
@@ -94,6 +85,15 @@ stages:
               Dockerfile: "result/Dockerfile"
               buildContext: "$(Build.SourcesDirectory)/result"
               tags: "$(tag)"
+
+          - task: Docker@2
+            inputs:
+              containerRegistry: '$(dockerRegistryServiceConnection)'
+              repository: '$(imageRepository)-postgreSQL'
+              command: 'build'
+              Dockerfile: 'postgreSQL/Dockerfile'
+              buildContext: '$(Build.SourcesDirectory)/postgreSQL/'
+              tags: '$(tag)'
 
   - stage: Trivy_Image_Scan
     displayName: "Trivy Image Scan"
