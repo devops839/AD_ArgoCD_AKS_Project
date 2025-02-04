@@ -1,16 +1,16 @@
-# Build Stage
-FROM --platform=linux mcr.microsoft.com/dotnet/sdk:7.0 AS build
-ARG BUILDPLATFORM
-RUN echo "I am running on $BUILDPLATFORM"
+# Build stage
+FROM mcr.microsoft.com/dotnet/sdk:7.0 AS build
+ENV BUILDPLATFORM="linux/amd64"
+ENV TARGETPLATFORM="linux/amd64"
+ENV TARGETARCH="x86_64"
 
 WORKDIR /source
 COPY ./*.csproj ./
 RUN dotnet restore
+COPY . .
+RUN dotnet publish -c release -o /app -a $TARGETARCH --self-contained false --no-restore
 
-COPY . .  
-RUN dotnet publish -c release -o /app --self-contained false --no-restore
-
-# Runtime Stage
+# App image
 FROM mcr.microsoft.com/dotnet/runtime:7.0
 WORKDIR /app
 COPY --from=build /app .
