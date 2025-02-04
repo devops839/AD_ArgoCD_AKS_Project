@@ -4,8 +4,6 @@ trigger:
       - worker/*
       - vote/*
       - result/*
-      - redis/*
-      - postgresql/*
 
 resources:
   - repo: self
@@ -67,14 +65,6 @@ stages:
           - task: Docker@2
             inputs:
               containerRegistry: "$(dockerRegistryServiceConnection)"
-              repository: "$(imageRepository)-redis"
-              command: "build"
-              Dockerfile: "redis/Dockerfile"
-              tags: "$(tag)"
-
-          - task: Docker@2
-            inputs:
-              containerRegistry: "$(dockerRegistryServiceConnection)"
               repository: "$(imageRepository)-worker"
               command: "build"
               Dockerfile: "worker/Dockerfile"
@@ -88,13 +78,20 @@ stages:
               Dockerfile: "result/Dockerfile"
               tags: "$(tag)"
 
-          - task: Docker@2
-            inputs:
-              containerRegistry: '$(dockerRegistryServiceConnection)'
-              repository: '$(imageRepository)-postgresql'
-              command: 'build'
-              Dockerfile: 'postgresql/Dockerfile'
-              tags: '$(tag)'
+  - stage: Trivy_Image_Scan
+    displayName: "Trivy Image Scan"
+    jobs:
+      - job: Trivy_Scan_Job
+        displayName: "Scan Docker Images with Trivy"
+        steps:
+          - script: |
+              services=("vote" "worker" "result")
+
+              for service in "${services[@]}"; do
+                  echo "Scanning demoacr839.azurecr.io/$(imageRepository)-$service:$(tag) with Trivy..."
+                  trivy image --severity HIGH,CRITICAL --format table -o "trivy-image-report-$service.html" "$(containerRegistry)/$(imageRepository)-$service:$(tag)"
+              done
+            displayName: "Run Trivy Image Scan"
 
   - stage: Push
     displayName: "Push All Images To ACR"
@@ -106,8 +103,6 @@ stages:
               docker login demoacr839.azurecr.io -u $(dockerUsername) -p $(dockerPassword)
               images=(
                   "vote"
-                  "postgresql"
-                  "redis"
                   "worker"
                   "result"
               )
@@ -127,7 +122,7 @@ stages:
         displayName: "Modify YAML files to reference new image"
         steps:
           - script: |
-              services=("vote" "postgresql" "redis" "worker" "result")
+              services=("vote" "worker" "result")
               
               for service in "${services[@]}"; do
                   echo "Updating image for $service"
